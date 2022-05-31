@@ -1,9 +1,15 @@
 [package]
-name = "data-query-lexer"
+name = "data-query-lexical"
 version = "0.1.0"
+authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 edition = "2021"
+description = "a lexical support library for the Data Query"
+readme = "README.md"
+categories = [""]
+keywords = ["query-lexical", "support-library"]
+license = "MIT"
+repository = "https://github.com/nebula-technologies/data-query-lexical"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-linked-hash-map = "0.5.4"
