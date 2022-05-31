@@ -13,10 +13,10 @@ pub trait MacroFormat {
 impl MacroFormat for lexer::Slicer {
     fn macro_fmt(&self) -> String {
         match self {
-            Slicer::Index(i) => format!("::data_query_lexer::Slicer::Index({})", i),
-            Slicer::Slice(f, t) => format!("::data_query_lexer::Slicer::Slice({},{})", f, t),
+            Slicer::Index(i) => format!("::data_query_lexical::Slicer::Index({})", i),
+            Slicer::Slice(f, t) => format!("::data_query_lexical::Slicer::Slice({},{})", f, t),
             Slicer::Ident(i) => {
-                format!("::data_query_lexer::Slicer::Ident(\"{}\".into())", i)
+                format!("::data_query_lexical::Slicer::Ident(\"{}\".into())", i)
             }
         }
     }
@@ -39,13 +39,13 @@ impl MacroFormat for lexer::LexOperator {
         match self {
             LexOperator::Identifier(i) => {
                 format!(
-                    "::data_query_lexer::LexOperator::Identifier(\"{}\".into())",
+                    "::data_query_lexical::LexOperator::Identifier(\"{}\".into())",
                     i
                 )
             }
             LexOperator::Pipe(p) => p.macro_fmt(),
             LexOperator::Generic(g) => format!(
-                "::data_query_lexer::LexOperator::Generic({})",
+                "::data_query_lexical::LexOperator::Generic({})",
                 g.macro_fmt()
             ),
         }
@@ -56,10 +56,10 @@ impl MacroFormat for lexer::GenericObjectIndex {
     fn macro_fmt(&self) -> String {
         match self {
             GenericObjectIndex::Wildcard => {
-                format!("::data_query_lexer::GenericObjectIndex::Wildcard")
+                format!("::data_query_lexical::GenericObjectIndex::Wildcard")
             }
             GenericObjectIndex::Slice(s) => format!(
-                "::data_query_lexer::GenericObjectIndex::Slice(::std::collections::LinkedList::from([{}]))",
+                "::data_query_lexical::GenericObjectIndex::Slice(::std::collections::LinkedList::from([{}]))",
                 s.iter()
                     .map(|s| s.macro_fmt())
                     .collect::<Vec<String>>()
