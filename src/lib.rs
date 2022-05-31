@@ -1,4 +1,3 @@
-extern crate linked_hash_map;
 mod lexer;
 pub(crate) mod lexer_constants;
 
