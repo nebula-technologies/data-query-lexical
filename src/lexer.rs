@@ -283,7 +283,6 @@ mod test {
             Ident("hello".to_string()),
         ]));
 
-        println!("{:?}", slicer);
         assert_eq!(true_generic_object, slicer.unwrap())
     }
 
@@ -308,7 +307,6 @@ mod test {
                 Ident("hello".to_string()),
             ]))),
         ]));
-        println!("{:?}", compiled_lex);
         assert_eq!(true_result, compiled_lex);
     }
 
@@ -325,7 +323,6 @@ mod test {
             ]))),
         ])
         .into());
-        println!("{:?}", compiled_lex);
         assert_eq!(true_result, compiled_lex);
     }
 
@@ -342,7 +339,6 @@ mod test {
             ]))),
         ])
         .into());
-        println!("{:?}", compiled_lex);
         assert_eq!(true_result, compiled_lex);
     }
 
@@ -359,7 +355,6 @@ mod test {
             ]))),
         ])
         .into());
-        println!("{:?}", compiled_lex);
         assert_eq!(true_result, compiled_lex);
     }
 }
