@@ -1,6 +1,6 @@
 [package]
 name = "data-query-lexical"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 edition = "2021"
 description = "a lexical support library for the Data Query"
