@@ -15,3 +15,5 @@ pub(crate) const LEX_GENERIC_START: char = '[';
 pub(crate) const LEX_GENERIC_SEPARATOR: char = ',';
 pub(crate) const LEX_GENERIC_SLICE: char = '-';
 pub(crate) const LEX_GENERIC_END: char = ']';
+
+pub(crate) const LEX_ESCAPE: char = '\\';

@@ -86,6 +86,7 @@ pub fn compile(s: &str) -> LexResult<LexicalOperations> {
         &mut lexer_vec,
         &mut Default::default(),
         Default::default(),
+        false,
         Default::default(),
     )
     .map(LexicalOperations::from)
@@ -95,39 +96,49 @@ pub fn generic_compiler(
     lexer_vec: &mut Vec<char>,
     mut operator: &mut LinkedList<LexOperator>,
     mut collect: String,
+    mut escape: bool,
     mut char_pointer: usize,
 ) -> LexResult<LinkedList<LexOperator>> {
     let char = lexer_vec.pop();
     if let Some(c) = char {
         char_pointer = char_pointer + 1;
-        match c {
-            LEX_IDENTIFIER => {
-                if !collect.is_empty() {
-                    operator.push_back(LexOperator::Identifier(collect));
+        if !escape {
+            match c {
+                LEX_ESCAPE => {
+                    escape = true;
                 }
-                collect = Default::default();
-            }
-            LEX_GENERIC_START => {
-                if !collect.is_empty() {
-                    operator.push_back(LexOperator::Identifier(collect));
+                LEX_IDENTIFIER => {
+                    if !collect.is_empty() {
+                        operator.push_back(LexOperator::Identifier(collect));
+                    }
                     collect = Default::default();
                 }
-                let v = generic_object_index(
-                    lexer_vec,
-                    Default::default(),
-                    LinkedList::new(),
-                    None,
-                    char_pointer,
-                )?;
-                operator.push_back(LexOperator::Generic(v));
-            }
-            _ => {
-                if c != LEX_ROUGE_WIDESPACE {
-                    collect.push(c)
+                LEX_GENERIC_START => {
+                    if !collect.is_empty() {
+                        operator.push_back(LexOperator::Identifier(collect));
+                        collect = Default::default();
+                    }
+                    let v = generic_object_index(
+                        lexer_vec,
+                        Default::default(),
+                        LinkedList::new(),
+                        None,
+                        false,
+                        char_pointer,
+                    )?;
+                    operator.push_back(LexOperator::Generic(v));
+                }
+                _ => {
+                    if c != LEX_ROUGE_WIDESPACE {
+                        collect.push(c)
+                    }
                 }
             }
+        } else {
+            collect.push(c);
+            escape = false;
         }
-        generic_compiler(lexer_vec, operator, collect, char_pointer)
+        generic_compiler(lexer_vec, operator, collect, escape, char_pointer)
     } else {
         Ok(operator.clone())
     }
@@ -138,80 +149,96 @@ fn generic_object_index(
     mut collect: String,
     mut slicer: LinkedList<Slicer>,
     mut tmp_slice: Option<usize>,
+    mut escape: bool,
     mut char_pointer: usize,
 ) -> LexResult<GenericObjectIndex> {
     let char = lexer_vec.pop();
     if let Some(c) = char {
         char_pointer += 1;
-        match c {
-            LEX_GENERIC_END => {
-                if collect.is_empty() && slicer.is_empty() {
-                    Ok(GenericObjectIndex::Wildcard)
-                } else if !collect.is_empty() {
-                    if let Some(from) = tmp_slice {
-                        let to = collect.parse::<usize>().map_err(LexerError::from)?;
-                        slicer.push_back(Slicer::Slice(from, to));
-                        tmp_slice = None;
-                    } else if let Ok(u) = collect.parse::<usize>() {
-                        slicer.push_back(Slicer::Index(u));
-                    } else {
-                        slicer.push_back(Slicer::Ident(collect.clone()));
-                    }
-                    Ok(GenericObjectIndex::Slice(slicer))
-                } else {
-                    Ok(GenericObjectIndex::Slice(slicer))
+        if !escape {
+            match c {
+                LEX_ESCAPE => {
+                    generic_object_index(lexer_vec, collect, slicer, tmp_slice, true, char_pointer)
                 }
-            }
-            LEX_GENERIC_SEPARATOR => {
-                if collect.is_empty() && slicer.is_empty() {
-                    Err(LexerError::UnexpectedCharacter {
-                        expected: "Integer/String".to_string(),
-                        found: LEX_GENERIC_SEPARATOR.to_string(),
-                        char_pointer,
-                        lex: format!("{:?}", lexer_vec),
-                    })
-                } else {
-                    if let Some(from) = tmp_slice {
-                        let to = collect.parse::<usize>().map_err(LexerError::from)?;
-                        slicer.push_back(Slicer::Slice(from, to));
-                        tmp_slice = None;
-                    } else if let Ok(u) = collect.parse::<usize>() {
-                        slicer.push_back(Slicer::Index(u));
+                LEX_GENERIC_END => {
+                    if collect.is_empty() && slicer.is_empty() {
+                        Ok(GenericObjectIndex::Wildcard)
+                    } else if !collect.is_empty() {
+                        if let Some(from) = tmp_slice {
+                            let to = collect.parse::<usize>().map_err(LexerError::from)?;
+                            slicer.push_back(Slicer::Slice(from, to));
+                            tmp_slice = None;
+                        } else if let Ok(u) = collect.parse::<usize>() {
+                            slicer.push_back(Slicer::Index(u));
+                        } else {
+                            slicer.push_back(Slicer::Ident(collect.clone()));
+                        }
+                        Ok(GenericObjectIndex::Slice(slicer))
                     } else {
-                        slicer.push_back(Slicer::Ident(collect.clone()));
+                        Ok(GenericObjectIndex::Slice(slicer))
+                    }
+                }
+                LEX_GENERIC_SEPARATOR => {
+                    if collect.is_empty() && slicer.is_empty() {
+                        Err(LexerError::UnexpectedCharacter {
+                            expected: "Integer/String".to_string(),
+                            found: LEX_GENERIC_SEPARATOR.to_string(),
+                            char_pointer,
+                            lex: format!("{:?}", lexer_vec),
+                        })
+                    } else {
+                        if let Some(from) = tmp_slice {
+                            let to = collect.parse::<usize>().map_err(LexerError::from)?;
+                            slicer.push_back(Slicer::Slice(from, to));
+                            tmp_slice = None;
+                        } else if let Ok(u) = collect.parse::<usize>() {
+                            slicer.push_back(Slicer::Index(u));
+                        } else {
+                            slicer.push_back(Slicer::Ident(collect.clone()));
+                        }
+                        collect = Default::default();
+                        generic_object_index(
+                            lexer_vec,
+                            collect,
+                            slicer,
+                            tmp_slice,
+                            false,
+                            char_pointer,
+                        )
+                    }
+                }
+                LEX_GENERIC_SLICE => {
+                    if collect.is_empty() && slicer.is_empty() {
+                        return Err(LexerError::UnexpectedCharacter {
+                            expected: "Integer/String".to_string(),
+                            found: LEX_GENERIC_SEPARATOR.to_string(),
+                            char_pointer,
+                            lex: format!("{:?}", lexer_vec),
+                        });
+                    } else if let Ok(u) = collect.parse::<usize>() {
+                        tmp_slice = Some(u);
+                    } else {
+                        return Err(LexerError::UnexpectedCharacter {
+                            expected: "Integer".to_string(),
+                            found: "String".to_string(),
+                            char_pointer,
+                            lex: format!("{:?}", lexer_vec),
+                        });
                     }
                     collect = Default::default();
-                    generic_object_index(lexer_vec, collect, slicer, tmp_slice, char_pointer)
+                    generic_object_index(lexer_vec, collect, slicer, tmp_slice, false, char_pointer)
+                }
+                LEX_ROUGE_WIDESPACE => {
+                    generic_object_index(lexer_vec, collect, slicer, tmp_slice, false, char_pointer)
+                }
+                _ => {
+                    collect.push(c);
+                    generic_object_index(lexer_vec, collect, slicer, tmp_slice, false, char_pointer)
                 }
             }
-            LEX_GENERIC_SLICE => {
-                if collect.is_empty() && slicer.is_empty() {
-                    return Err(LexerError::UnexpectedCharacter {
-                        expected: "Integer/String".to_string(),
-                        found: LEX_GENERIC_SEPARATOR.to_string(),
-                        char_pointer,
-                        lex: format!("{:?}", lexer_vec),
-                    });
-                } else if let Ok(u) = collect.parse::<usize>() {
-                    tmp_slice = Some(u);
-                } else {
-                    return Err(LexerError::UnexpectedCharacter {
-                        expected: "Integer".to_string(),
-                        found: "String".to_string(),
-                        char_pointer,
-                        lex: format!("{:?}", lexer_vec),
-                    });
-                }
-                collect = Default::default();
-                generic_object_index(lexer_vec, collect, slicer, tmp_slice, char_pointer)
-            }
-            LEX_ROUGE_WIDESPACE => {
-                generic_object_index(lexer_vec, collect, slicer, tmp_slice, char_pointer)
-            }
-            _ => {
-                collect.push(c);
-                generic_object_index(lexer_vec, collect, slicer, tmp_slice, char_pointer)
-            }
+        } else {
+            collect.push(c);
+            generic_object_index(lexer_vec, collect, slicer, tmp_slice, false, char_pointer)
         }
     } else {
         Err(LexerError::EndOfQuery {
@@ -246,6 +273,7 @@ mod test {
             "".to_string(),
             LinkedList::new(),
             None,
+            false,
             0usize,
         );
         let true_generic_object = GenericObjectIndex::Slice(LinkedList::from([
@@ -268,6 +296,7 @@ mod test {
             &mut lex_vec,
             &mut operator,
             Default::default(),
+            false,
             Default::default(),
         );
         let true_result: LexResult<LinkedList<LexOperator>> = Ok(LinkedList::from([
@@ -291,6 +320,40 @@ mod test {
             Generic(GenericObjectIndex::Slice(LinkedList::from([
                 Index(1),
                 Index(2),
+                Slice(4, 6),
+                Ident("hello".to_string()),
+            ]))),
+        ])
+        .into());
+        println!("{:?}", compiled_lex);
+        assert_eq!(true_result, compiled_lex);
+    }
+
+    #[test]
+    pub fn test_lex_escape() {
+        let compiled_lex = compile(".metadata[1,2\\,,4-6,hello]");
+        let true_result: LexResult<LexicalOperations> = Ok(LinkedList::from([
+            Identifier("metadata".to_string()),
+            Generic(GenericObjectIndex::Slice(LinkedList::from([
+                Index(1),
+                Ident("2,".to_string()),
+                Slice(4, 6),
+                Ident("hello".to_string()),
+            ]))),
+        ])
+        .into());
+        println!("{:?}", compiled_lex);
+        assert_eq!(true_result, compiled_lex);
+    }
+
+    #[test]
+    pub fn test_lex_escape_identifier() {
+        let compiled_lex = compile(".meta\\.data[1,2\\,,4-6,hello]");
+        let true_result: LexResult<LexicalOperations> = Ok(LinkedList::from([
+            Identifier("meta.data".to_string()),
+            Generic(GenericObjectIndex::Slice(LinkedList::from([
+                Index(1),
+                Ident("2,".to_string()),
                 Slice(4, 6),
                 Ident("hello".to_string()),
             ]))),
