@@ -1,3 +1,5 @@
+extern crate proc_macro;
+
 mod lexer;
 pub(crate) mod lexer_constants;
 

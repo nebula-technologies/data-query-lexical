@@ -6,6 +6,7 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum LexerError {
+    NoLexicalRoutine,
     EndOfQuery {
         expected: String,
         char_pointer: usize,
